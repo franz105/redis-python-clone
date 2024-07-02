@@ -1,6 +1,15 @@
 import asyncio
+class KeyValueStore:
+    def __init__(self):
+        self.data = {}
 
-async def handle_client(reader, writer):
+    def set(self, key, value):
+        self.data[key] = value
+
+    def get(self, key):
+        return self.data.get(key, b"")
+    
+async def handle_client(reader, writer, store):
     print("New connection")
     try:
         while data := await reader.read(1024):
@@ -10,6 +19,16 @@ async def handle_client(reader, writer):
                 response = b"+PONG\r\n"
             elif command == "ECHO":
                 response = b"$" + str(len(args[0])).encode() + b"\r\n" + args[0].encode() + b"\r\n"
+            elif command == "SET":
+                store.set(args[0], args[1])
+                response = b"+OK\r\n"
+            elif command == "GET":
+                value = store.get(args[0])
+                if not value:
+                    response = b"$-1\r\n"
+                else:
+                    response = b"$" + str(len(value)).encode() + b"\r\n" + value.encode() + b"\r\n"
+
             writer.write(response)
             await writer.drain()  # Ensure response is sent
         print("Closing connection")
@@ -22,7 +41,8 @@ async def handle_client(reader, writer):
         await writer.wait_closed()
 
 async def main():
-    server = await asyncio.start_server(handle_client, 'localhost', 6379)
+    store = KeyValueStore()
+    server = await asyncio.start_server(lambda reader, writer: handle_client(reader, writer, store), 'localhost', 6379)
     async with server:
         await server.serve_forever()
 
@@ -30,7 +50,7 @@ async def main():
 async def handle_input(data):
     aggregate = set("$*!=%~>")
     simple = set("+-:_#,(")
-    commands = set(["ECHO", "PING"])
+    commands = set(["ECHO", "PING", "SET", "GET"])
     command = ""
     args = []
 
