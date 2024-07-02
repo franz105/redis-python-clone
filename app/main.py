@@ -2,12 +2,18 @@ import asyncio
 class KeyValueStore:
     def __init__(self):
         self.data = {}
+        self.loop = asyncio.get_running_loop()
 
-    def set(self, key, value):
+    async def set(self, key, value, px = None):
         self.data[key] = value
+        if px:
+            self.loop.call_later(px/1000, self.expire, key)
 
     def get(self, key):
         return self.data.get(key, b"")
+    
+    def expire(self, key): 
+        self.data.pop(key, None)
     
 async def handle_client(reader, writer, store):
     print("New connection")
@@ -15,15 +21,22 @@ async def handle_client(reader, writer, store):
         while data := await reader.read(1024):
             command, args = await handle_input(data)
             response = b""
+
             if command == "PING":
                 response = b"+PONG\r\n"
+
             elif command == "ECHO":
                 response = b"$" + str(len(args[0])).encode() + b"\r\n" + args[0].encode() + b"\r\n"
+
             elif command == "SET":
-                store.set(args[0], args[1])
+                key, value, *other = args
+                px = int(other[1]) if len(other) == 2 and other[0].upper() == "PX" else None
+                await store.set(key, value, px)
                 response = b"+OK\r\n"
+
             elif command == "GET":
                 value = store.get(args[0])
+                print(value if value else "None")
                 if not value:
                     response = b"$-1\r\n"
                 else:
@@ -39,12 +52,6 @@ async def handle_client(reader, writer, store):
     finally:
         writer.close()
         await writer.wait_closed()
-
-async def main():
-    store = KeyValueStore()
-    server = await asyncio.start_server(lambda reader, writer: handle_client(reader, writer, store), 'localhost', 6379)
-    async with server:
-        await server.serve_forever()
 
 # Return a tuple of (command, args), where command is a string and args is an array
 async def handle_input(data):
@@ -68,7 +75,11 @@ async def handle_input(data):
 
     return command, args
     
-    
+async def main():
+    store = KeyValueStore()
+    server = await asyncio.start_server(lambda reader, writer: handle_client(reader, writer, store), 'localhost', 6379)
+    async with server:
+        await server.serve_forever()
 
 
 if __name__ == "__main__":
