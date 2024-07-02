@@ -1,4 +1,6 @@
 import asyncio
+import sys 
+
 class KeyValueStore:
     def __init__(self):
         self.data = {}
@@ -74,10 +76,22 @@ async def handle_input(data):
         i += 1
 
     return command, args
+
+def get_port():
+    port = 6379
+    i = 0
+    while i < len(sys.argv) and sys.argv[i] != "--port":
+        i += 1
+    
+    if i + 1 < len(sys.argv):
+        port = int(sys.argv[i+1])
+    
+    return port
     
 async def main():
     store = KeyValueStore()
-    server = await asyncio.start_server(lambda reader, writer: handle_client(reader, writer, store), 'localhost', 6379)
+    port = get_port()
+    server = await asyncio.start_server(lambda reader, writer: handle_client(reader, writer, store), 'localhost', port)
     async with server:
         await server.serve_forever()
 
