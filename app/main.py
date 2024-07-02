@@ -1,17 +1,24 @@
-import socket
+import asyncio
 
+async def handle_client(reader, writer):
+    print("New connection")
+    try:
+        while data := await reader.read(1024):
+            #TODO: parse input data
+            response = b"+PONG\r\n"
+            writer.write(response)
+            await writer.drain()  # Ensure response is sent
+        print("Closing connection")
+    except asyncio.CancelledError:
+        print("Connection cancelled")
+    finally:
+        writer.close()
+        await writer.wait_closed()
 
-def main():
-
-    
-    server_socket = socket.create_server(("localhost", 6379), reuse_port=True)
-    client_socket, client_address = server_socket.accept() # wait for client
-
-    print("connection accepted")
-    while (data := client_socket.recv(1024)):
-        client_socket.send(b"+PONG\r\n")
-    client_socket.close() # close connection
-
+async def main():
+    server = await asyncio.start_server(handle_client, 'localhost', 6379)
+    async with server:
+        await server.serve_forever()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
