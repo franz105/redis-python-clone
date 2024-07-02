@@ -1,5 +1,6 @@
 import asyncio
 from app.resp_utils import handle_input, make_bulk_string
+from app.config import get_replication
 
 
 commands = set(["ECHO", "PING", "SET", "GET", "INFO"])
@@ -54,6 +55,9 @@ async def info_handler(param):
     i = 0
     if param == "replication":
         result_string += "# Replication\r\n"
-        result_string += "role:master\r\n"
+        if get_replication():
+            result_string += "role:slave\r\n"
+        else:
+            result_string += "role:master\r\n"
 
     return await make_bulk_string(result_string)
