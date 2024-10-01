@@ -1,7 +1,5 @@
 import asyncio
 from app.resp_utils import handle_input, make_bulk_string
-from app.config import get_replication
-
 
 commands = set(["ECHO", "PING", "SET", "GET", "INFO"])
     
