@@ -8,10 +8,9 @@ def get_port():
             break
     return port
 
-def get_replication():
-    result = "" # "master" if empty
+def get_role():
+    """Determines if the server is running as master or slave"""
     for i in range(len(sys.argv)):
         if sys.argv[i] == "--replicaof" and i + 1 < len(sys.argv):
-            result = sys.argv[i+1]
-            break
-    return result
+            return 'slave'
+    return 'master'

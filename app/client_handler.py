@@ -5,7 +5,7 @@ from app.config import get_replication
 
 commands = set(["ECHO", "PING", "SET", "GET", "INFO"])
     
-async def handle_client(reader, writer, store):
+async def handle_client(reader, writer, store, replication):
     print("New connection")
     try:
         while data := await reader.read(1024):
@@ -37,7 +37,7 @@ async def handle_client(reader, writer, store):
                     response = await make_bulk_string(value)
             
             elif command == "INFO":
-                response = await info_handler(args[0])
+                response = await info_handler(args[0], replication)
 
             writer.write(response)
             await writer.drain()  # Ensure response is sent
@@ -50,14 +50,13 @@ async def handle_client(reader, writer, store):
         writer.close()
         await writer.wait_closed()
 
-async def info_handler(param):
+async def info_handler(param, replication):
     result_string = ""
-    i = 0
+    
     if param == "replication":
         result_string += "# Replication\r\n"
-        if get_replication():
-            result_string += "role:slave\r\n"
-        else:
-            result_string += "role:master\r\n"
+        result_string += f"role:{replication.get_role()}\r\n"
+        result_string += f"master_replid:{replication.get_replication_id()}\r\n"
+        result_string += f"master_repl_offset:{replication.get_replication_offset()}\r\n"
 
     return await make_bulk_string(result_string)
