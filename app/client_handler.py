@@ -39,6 +39,10 @@ async def dispatch_command(command, args, store, replication):
         return await get_handler(args, store)
     elif command == "INFO":
         return await info_handler(args[0], replication)
+    elif command == "REPLCONF":
+        return await replconf_handler(args)
+    elif command == "PSYNC":
+        return await psync_handler(args, replication)
     else:
         return b"-Error: Unknown command\r\n"
 
@@ -78,3 +82,11 @@ async def info_handler(param, replication):
         result_string += f"master_repl_offset:{replication.get_replication_offset()}\r\n"
 
     return await make_bulk_string(result_string)
+
+async def replconf_handler(args):
+    """Handles the REPLCONF command."""
+    return b"+OK\r\n"
+
+async def psync_handler(args, replication):
+    """Handles the PSYNC command."""
+    return 
