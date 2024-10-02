@@ -14,3 +14,11 @@ def get_role():
         if sys.argv[i] == "--replicaof" and i + 1 < len(sys.argv):
             return 'slave'
     return 'master'
+
+def get_replica_host_port():
+    """Get master host and port if running as a replica (slave)"""
+    for i in range(len(sys.argv)):
+        if sys.argv[i] == "--replicaof" and i + 1 < len(sys.argv):
+            host_port = sys.argv[i+1].split()
+            return host_port[0], int(host_port[1])
+    return None, None
