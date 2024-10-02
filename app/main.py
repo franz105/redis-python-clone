@@ -15,7 +15,7 @@ async def replica_handshake(master_host, master_port):
         writer.write(ping_message.encode())
         await writer.drain()  # Ensure it's sent
 
-        # Wait for the PONG response from the master
+        # Should Reveive PONG
         response = await reader.read(100)
         print(f"Received from master: {response.decode()}")
 
@@ -25,7 +25,7 @@ async def replica_handshake(master_host, master_port):
         await writer.wait_closed()
     except Exception as e:
         print(f"Failed to connect to master: {e}")
-
+        
 async def main():
     store = KeyValueStore()
     port = get_port()
@@ -38,15 +38,16 @@ async def main():
         master_host, master_port = get_replica_host_port()
         # Perform handshake (PING) with the master
         await replica_handshake(master_host, master_port)
-    else:
-        # Start the server as master
-        server = await asyncio.start_server(
-            lambda reader, writer: handle_client(reader, writer, store, replication), 
-            'localhost', 
-            port
-        )
-        async with server:
-            await server.serve_forever()
+
+    # Start the server regardless of the role
+    server = await asyncio.start_server(
+        lambda reader, writer: handle_client(reader, writer, store, replication), 
+        'localhost', 
+        port
+    )
+    async with server:
+        await server.serve_forever()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

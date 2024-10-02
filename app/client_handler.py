@@ -42,7 +42,7 @@ async def dispatch_command(command, args, store, replication):
     else:
         return b"-Error: Unknown command\r\n"
 
-# Individual command handlers
+### Individual command handlers ###
 
 async def ping_handler():
     """Handles the PING command."""
