@@ -37,6 +37,14 @@ async def replica_handshake(master_host, master_port, replica_port):
         response = await reader.read(100)
         print(f"Received from master: {response.decode()}")
 
+        # Step 4: Send the PSYNC command (PSYNC ? -1)
+        psync_message = "*3\r\n$5\r\nPSYNC\r\n$1\r\n?\r\n$2\r\n-1\r\n"
+        writer.write(psync_message.encode())
+        await writer.drain()  # Ensure it's sent
+
+        # Wait for the +FULLRESYNC response from the master
+        response = await reader.read(100)
+        print(f"Received from master: {response.decode()}")
 
         writer.close()
         await writer.wait_closed()
