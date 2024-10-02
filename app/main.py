@@ -4,7 +4,7 @@ from app.key_value_store import KeyValueStore
 from app.client_handler import handle_client
 from app.replication import Replication
 
-async def replica_handshake(master_host, master_port):
+async def replica_handshake(master_host, master_port, replica_port):
     """Handles the replica connecting to the master and sending PING"""
     try:
         # Connect to the master
@@ -19,13 +19,30 @@ async def replica_handshake(master_host, master_port):
         response = await reader.read(100)
         print(f"Received from master: {response.decode()}")
 
-        # Do parts 2 and 3 of the handshake
+        # Step 2: Send the first REPLCONF command (listening-port)
+        replconf_port_message = f"*3\r\n$8\r\nREPLCONF\r\n$14\r\nlistening-port\r\n${len(str(replica_port))}\r\n{replica_port}\r\n"
+        writer.write(replconf_port_message.encode())
+        await writer.drain()  # Ensure it's sent
+
+        # Wait for the +OK response from the master
+        response = await reader.read(100)
+        print(f"Received from master: {response.decode()}")
+
+        # Step 3: Send the second REPLCONF command (capa psync2)
+        replconf_capa_message = "*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$6\r\npsync2\r\n"
+        writer.write(replconf_capa_message.encode())
+        await writer.drain()  # Ensure it's sent
+
+        # Wait for the +OK response from the master
+        response = await reader.read(100)
+        print(f"Received from master: {response.decode()}")
+
 
         writer.close()
         await writer.wait_closed()
     except Exception as e:
         print(f"Failed to connect to master: {e}")
-        
+
 async def main():
     store = KeyValueStore()
     port = get_port()
@@ -37,7 +54,7 @@ async def main():
         # Get master host and port from command line arguments
         master_host, master_port = get_replica_host_port()
         # Perform handshake (PING) with the master
-        await replica_handshake(master_host, master_port)
+        await replica_handshake(master_host, master_port, port)
 
     # Start the server regardless of the role
     server = await asyncio.start_server(
