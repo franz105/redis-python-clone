@@ -2,7 +2,7 @@ import asyncio
 from app.resp_utils import handle_input, make_bulk_string
 
 # List of supported commands
-commands = set(["ECHO", "PING", "SET", "GET", "INFO", "REPLCONF"])
+commands = set(["ECHO", "PING", "SET", "GET", "INFO", "REPLCONF", "PSYNC"])
 
 async def handle_client(reader, writer, store, replication):
     print("New connection")
@@ -89,4 +89,10 @@ async def replconf_handler(args):
 
 async def psync_handler(args, replication):
     """Handles the PSYNC command."""
-    return 
+    #args = [replication_id, replication_offset]
+    if len(args) != 2:
+        return b"-Error: Invalid PSYNC command\r\n"
+
+    repl_id = replication.get_replication_id()
+    # Respond with FULLRESYNC and the master's replication ID
+    return f"+FULLRESYNC {repl_id} 0\r\n".encode()
