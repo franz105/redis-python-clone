@@ -9,7 +9,13 @@ async def handle_input(input):
 
     i = 0
     while i < len(lst):
-        if lst[i] and lst[i][0] not in aggregate and lst[i][0] not in simple:
+        # Handle bulk strings properly
+        if lst[i] and lst[i].startswith("$"):
+            length = int(lst[i][1:]) 
+            i += 1 
+            if length > 0 and i < len(lst):
+                args.append(lst[i])
+        elif lst[i] and lst[i][0] not in aggregate and lst[i][0] not in simple:
             args.append(lst[i])
         i += 1
 
