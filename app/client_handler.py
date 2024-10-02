@@ -87,6 +87,10 @@ async def replconf_handler(args):
     """Handles the REPLCONF command."""
     return b"+OK\r\n"
 
+EMPTY_RDB_HEX = "524544495330303131fa0972656469732d76657205372e322e30fa0a72656469732d62697473c040fa056374696d65c26d08bc65fa08757365642d6d656dc2b0c41000fa08616f662d62617365c000fff06e3bfec0ff5aa2"
+def hex_to_bytes(hex_str):
+    return bytes.fromhex(hex_str)
+
 async def psync_handler(args, replication):
     """Handles the PSYNC command."""
     #args = [replication_id, replication_offset]
@@ -95,4 +99,14 @@ async def psync_handler(args, replication):
 
     repl_id = replication.get_replication_id()
     # Respond with FULLRESYNC and the master's replication ID
-    return f"+FULLRESYNC {repl_id} 0\r\n".encode()
+    response = f"+FULLRESYNC {repl_id} 0\r\n".encode()
+
+    # Send the empty RDB file in bulk string format
+    rdb_bytes = hex_to_bytes(EMPTY_RDB_HEX)  # Convert hex RDB to bytes
+    rdb_length = len(rdb_bytes)
+
+    # Bulk string format for RDB: $<length_of_file>\r\n<contents_of_file>
+    bstring = f"${rdb_length}\r\n".encode() + rdb_bytes
+
+    # Return both the FULLRESYNC response and the bulk string
+    return response + bstring
