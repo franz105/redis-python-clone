@@ -2,7 +2,7 @@ import asyncio
 from app.resp_utils import handle_input, make_bulk_string
 
 # List of supported commands
-commands = set(["ECHO", "PING", "SET", "GET", "INFO"])
+commands = set(["ECHO", "PING", "SET", "GET", "INFO", "REPLCONF"])
 
 async def handle_client(reader, writer, store, replication):
     print("New connection")
